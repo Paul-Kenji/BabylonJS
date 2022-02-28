@@ -6,6 +6,10 @@ let inputStates = {};
 window.onload = startGame;
 
 var mf = false;
+var mb = false;
+var ml = false;
+var mr = false;
+var mup = false;
 var spood = 0;
 var howmuchairmove = 1;
 var bhops = 0;
@@ -16,6 +20,12 @@ function startGame() {
     engine = new BABYLON.Engine(canvas, true);
     scene = createScene();
     
+    //add music
+    var music = new BABYLON.Sound("music", 'musics/musicFond.mp3', scene, soundReady, {loop:true,volume: 0.5})
+    function soundReady(){
+        music.play();
+    }
+
     // modify some default settings (i.e pointer events to prevent cursor to go 
     // out of the game window)
     modifySettings();
@@ -24,7 +34,7 @@ function startGame() {
     engine.runRenderLoop(() => {
         let deltaTime = engine.getDeltaTime(); // remind you something ?
 
-        tank.move();
+        //tank.move();
         scene.render();
     });
 }
@@ -32,15 +42,54 @@ function startGame() {
 function createScene() {
     let scene = new BABYLON.Scene(engine);
     // enable physics
-    scene.enablePhysics();
-    let ground = createGround(scene);
 
+	scene.enablePhysics(new BABYLON.Vector3(0, -70, 0));
+    scene.gravity = new BABYLON.Vector3(0, -70, 0);
+    let ground = createGround(scene);
     let tank = createTank(scene);
 
-    // second parameter is the target to follow
-    //let followCamera = createFollowCamera(scene, tank);
+    let followCamera = createFollowCamera(scene, tank);
+    scene.activeCameras = followCamera;
+    //scene.activeCameras = [];
+    createLights(scene);
 
-    ////////////////////CAMERA////////////////////
+    return scene;
+}
+
+function createGround(scene) {
+    const groundOptions = { width: 2000, height: 2000, subdivisions: 20, minHeight: 0, maxHeight: 100, onReady: onGroundCreated };
+    //scene is optional and defaults to the current scene
+    const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap("gdhm", 'images/hmap1.png', groundOptions, scene);
+
+    function onGroundCreated() {
+        const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
+        groundMaterial.diffuseTexture = new BABYLON.Texture("images/grass.jpg");
+        ground.material = groundMaterial;
+        // to be taken into account by collision detection
+        ground.checkCollisions = true;
+        //groundMaterial.wireframe=true;
+
+                // for physic engine
+                ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground,
+                    BABYLON.PhysicsImpostor.HeightmapImpostor, { mass: 0,
+                                                                 restitution:0,
+                                                                 friction:.001
+                                                                 },
+                                                                 scene);   
+    }
+    return ground;
+}
+
+function createLights(scene) {
+    // i.e sun light with all light rays parallels, the vector is the direction.
+    let light0 = new BABYLON.DirectionalLight("dir0", new BABYLON.Vector3(10, -1, 0), scene);
+    //var light = new BABYLON.PointLight("myPointLight", new BABYLON.Vector3(0, 3, 0), scene);
+    light0.intensity = 15;
+    light0.diffuse = new BABYLON.Color3(1, 1, 1);
+
+}
+
+function createFollowCamera(scene, tank) {
     var camera = new BABYLON.UniversalCamera("camera1", new BABYLON.Vector3(0, 0, 0), scene);
     camera.attachControl(canvas, true);
     camera.inertia = 0.6;
@@ -50,19 +99,9 @@ function createScene() {
     camera.minZ = 0;
     camera.angularSensibility = 1000;
     camera.position.y = 0.45;
-
     camera.position = tank.position.add(new BABYLON.Vector3(0, 2.5, 0));
 
-    var mc = BABYLON.MeshBuilder.CreateCylinder("mc", {diameterTop: 1.5, diameterBottom: 1.5, tessellation: 32, height: 2}, scene);
-    var es2 = BABYLON.Mesh.CreateSphere("es2", 16, 1.5, scene);
-    //capsule.position.y = 25;
-    mc.position.y = 26;
-    es2.position.y = 27;
-    mc.physicsImpostor = new BABYLON.PhysicsImpostor(mc, BABYLON.PhysicsImpostor.CylinderImpostor, { mass: 0, restitution: 0, friction: 0.1 }, scene);
-    es2.physicsImpostor = new BABYLON.PhysicsImpostor(es2, BABYLON.PhysicsImpostor.SphereImpostor, { mass: 0, restitution: 0, friction: 0.1 }, scene);
-
     var rotate = function (mesh, direction, power) {
-        // console.log("rotate happening", direction.scale(power));
         mesh.physicsImpostor.setAngularVelocity(
             mesh.physicsImpostor.getAngularVelocity().add(
                 direction.scale(power)
@@ -94,84 +133,26 @@ function createScene() {
     camera.position = tank.position.add(new BABYLON.Vector3(0, 2.5, 0));
     var eulerRot = BABYLON.Vector3.Zero();
 
-    
+    var update = function() {
 
-// the new update() func... stronger than dirt.
-var update = function() {
-
-    // console.logs in the render loop? Streaming them, eh?  About 23 million
-    // output lines per minute, ya fig?  BOG!
-    if (mf == true) translate(tank, new BABYLON.Vector3(0, 0, 2+spood*howmuchairmove+bhops), transpower);
-
-
-    // make the camera be in same position as sphere, without parenting. 
-    // Raise cam.pos.y 0.45 ...matching line 31.
-    camera.position = tank.position.add(new BABYLON.Vector3(0, 2.5, 0));
-    tank.physicsImpostor.physicsBody.quaternion.toEuler(eulerRot); // adjust eulerRot value
-    camera.rotation.y = eulerRot.y; // use adjusted value
-
-    //capsule.position.x = moju.position.x;
-    //capsule.position.y = moju.position.y + 0.5;
-    //capsule.position.z = moju.position.z;
-    //capsule.rotationQuaternion.x = 0;
-    //capsule.rotationQuaternion.z = 0;
-    mc.rotationQuaternion.x = 0;
-    mc.rotationQuaternion.z = 0;
-    es2.rotationQuaternion.x = 0;
-    es2.rotationQuaternion.z = 0;
-    mc.position.x = tank.position.x;
-    mc.position.y = tank.position.y + 1.5;
-    mc.position.z = tank.position.z;
-    es2.position.x = tank.position.x;
-    es2.position.y = tank.position.y + 2.5;
-    es2.position.z = tank.position.z;
-
-}
-
-
-scene.registerBeforeRender(function() {
-    update();
-});
-    ////////////////////FIN CAMERA////////////////////
-    
-    //scene.activeCamera = followCamera;
-    scene.activeCameras = [];
-    createLights(scene);
-
-    return scene;
-}
-
-function createGround(scene) {
-    const groundOptions = { width: 2000, height: 2000, subdivisions: 20, minHeight: 0, maxHeight: 100, onReady: onGroundCreated };
-    //scene is optional and defaults to the current scene
-    const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap("gdhm", 'images/hmap1.png', groundOptions, scene);
-
-    function onGroundCreated() {
-        const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
-        groundMaterial.diffuseTexture = new BABYLON.Texture("images/grass.jpg");
-        ground.material = groundMaterial;
-        // to be taken into account by collision detection
-        ground.checkCollisions = true;
-        //groundMaterial.wireframe=true;
-
-                // for physic engine
-                ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground,
-                    BABYLON.PhysicsImpostor.HeightmapImpostor, { mass: 0 }, scene);   
+        if (mf == true) translate(tank, new BABYLON.Vector3(0, 0, 2+spood*howmuchairmove+bhops), transpower);
+        if (mb == true) translate(tank, new BABYLON.Vector3(0, 0, -(2+spood*howmuchairmove+bhops)), transpower);
+        if (ml == true) translate(tank, new BABYLON.Vector3(-(2+spood*howmuchairmove+bhops), 0, 0), transpower);
+        if (mr == true) translate(tank, new BABYLON.Vector3(2+spood*howmuchairmove+bhops, 0, 0), transpower);
+        if (mup == true) {
+            let origine = new BABYLON.Vector3(tank.position.x, tank.position.y, tank.position.z);
+            tank.physicsImpostor.applyImpulse(new BABYLON.Vector3(0, 10, 0), origine);
+        }
+        // make the camera be in same position as sphere, without parenting. 
+        // Raise cam.pos.y 0.45 ...matching line 31.
+        camera.position = tank.position.add(new BABYLON.Vector3(0, 2.5, 0));
+        tank.physicsImpostor.physicsBody.quaternion.toEuler(eulerRot); // adjust eulerRot value
+        camera.rotation.y = eulerRot.y; // use adjusted value
     }
-    return ground;
-}
 
-function createLights(scene) {
-    // i.e sun light with all light rays parallels, the vector is the direction.
-    let light0 = new BABYLON.DirectionalLight("dir0", new BABYLON.Vector3(10, -1, 0), scene);
-    //var light = new BABYLON.PointLight("myPointLight", new BABYLON.Vector3(0, 3, 0), scene);
-    light0.intensity = 15;
-    light0.diffuse = new BABYLON.Color3(1, 1, 1);
-
-}
-
-function createFollowCamera(scene, target) {
-
+    scene.registerBeforeRender(function() {
+        update();
+    });
 }
 
 function createTank(scene) {
@@ -198,32 +179,10 @@ function createTank(scene) {
         scene
     );
 
-    tank.move = () => {
+    tank.physicsImpostor.physicsBody.linearDamping = 0.999;
+    tank.physicsImpostor.physicsBody.angularDamping = 0.999999999999;
 
-        if (inputStates.up) {
-            tank.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(0, 0, 10));
-        }
-        if (inputStates.down) {
-            tank.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(0, 0, -10));
-        }
-        if (inputStates.left) {
-            //const axis = new BABYLON.Vector3(0, 1, 0);
-            //const quaternion = new BABYLON.Quaternion.RotationAxis(axis, -Math.PI / 4);
-            //tank.physicsImpostor.setAngularVelocity(quaternion);
-            tank.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(-10, 0, 0));
-        }
-        if (inputStates.right) {
-            //const axis = new BABYLON.Vector3(0, 1, 0);
-            //const quaternion = new BABYLON.Quaternion.RotationAxis(axis, Math.PI / 4);
-            //tank.physicsImpostor.setAngularVelocity(quaternion);
-            tank.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(10, 0, 0));
-        }
-        if (inputStates.space) {
-            let origine = new BABYLON.Vector3(tank.position.x, tank.position.y, tank.position.z);
-            tank.physicsImpostor.applyImpulse(new BABYLON.Vector3(0, 10, 0), origine);
-        }
-    }
-        return tank;
+    return tank;
 }
 
     window.addEventListener("resize", () => {
@@ -264,15 +223,19 @@ function createTank(scene) {
         window.addEventListener('keydown', (event) => {
             if ((event.key === "ArrowLeft") || (event.key === "q") || (event.key === "Q")) {
                 inputStates.left = true;
+                ml = true;
             } else if ((event.key === "ArrowUp") || (event.key === "z") || (event.key === "Z")) {
                 inputStates.up = true;
                 mf = true;
             } else if ((event.key === "ArrowRight") || (event.key === "d") || (event.key === "D")) {
                 inputStates.right = true;
+                mr = true;
             } else if ((event.key === "ArrowDown") || (event.key === "s") || (event.key === "S")) {
                 inputStates.down = true;
+                mb = true;
             } else if (event.key === " ") {
                 inputStates.space = true;
+                mup = true;
             }
         }, false);
 
@@ -280,13 +243,18 @@ function createTank(scene) {
         window.addEventListener('keyup', (event) => {
             if ((event.key === "ArrowLeft") || (event.key === "q") || (event.key === "Q")) {
                 inputStates.left = false;
+                ml = false;
             } else if ((event.key === "ArrowUp") || (event.key === "z") || (event.key === "Z")) {
                 inputStates.up = false;
+                mf = false;
             } else if ((event.key === "ArrowRight") || (event.key === "d") || (event.key === "D")) {
                 inputStates.right = false;
+                mr = false;
             } else if ((event.key === "ArrowDown") || (event.key === "s") || (event.key === "S")) {
                 inputStates.down = false;
+                mb = false;
             } else if (event.key === " ") {
+                mup = false;
                 inputStates.space = false;
             }
         }, false);
