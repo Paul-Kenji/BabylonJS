@@ -10,6 +10,8 @@ var mb = false;
 var ml = false;
 var mr = false;
 var mup = false;
+var mjump = 0;
+var indicJump = false;
 var spood = 0;
 var howmuchairmove = 1;
 var bhops = 0;
@@ -21,10 +23,11 @@ function startGame() {
     scene = createScene();
     
     //add music
-    var music = new BABYLON.Sound("music", 'musics/musicFond.mp3', scene, soundReady, {loop:true,volume: 0.5})
+   /* var music = new BABYLON.Sound("music", 'musics/musicFond.mp3', scene, soundReady, {loop:true,volume: 0.5})
+    
     function soundReady(){
         music.play();
-    }
+    }*/
 
     // modify some default settings (i.e pointer events to prevent cursor to go 
     // out of the game window)
@@ -141,10 +144,27 @@ function createFollowCamera(scene, tank) {
         if (mr == true) translate(tank, new BABYLON.Vector3(2+spood*howmuchairmove+bhops, 0, 0), transpower);
         if (mup == true) {
             let origine = new BABYLON.Vector3(tank.position.x, tank.position.y, tank.position.z);
-            tank.physicsImpostor.applyImpulse(new BABYLON.Vector3(0, 10, 0), origine);
+            if( mjump == 0){ // first jump
+                tank.physicsImpostor.applyImpulse(new BABYLON.Vector3(0, 20, 0), origine);
+                var musicJump = new BABYLON.Sound("musicjump", 'musics/jump.mp3', scene, soundReady, {loop:false,volume: 0.5})
+                function soundReady(){
+                    musicJump.play();
+                }
+                
+            }
+            else if( mjump == 1){ //second jump
+                tank.physicsImpostor.applyImpulse(new BABYLON.Vector3(0, 10, 0), origine);
+                var musicJump = new BABYLON.Sound("musicjump", 'musics/jump.mp3', scene, soundReady, {loop:false,volume: 0.5})
+                function soundReady(){
+                    musicJump.play();
+                }
+                setTimeout(chargeJump, 500);
+            }
+            mjump ++;
+            mup = false;
         }
-        // make the camera be in same position as sphere, without parenting. 
-        // Raise cam.pos.y 0.45 ...matching line 31.
+
+        // Raise cam.pos.y 0.45 ...
         camera.position = tank.position.add(new BABYLON.Vector3(0, 2.5, 0));
         tank.physicsImpostor.physicsBody.quaternion.toEuler(eulerRot); // adjust eulerRot value
         camera.rotation.y = eulerRot.y; // use adjusted value
@@ -163,9 +183,6 @@ function createTank(scene) {
     tank1.parent = tank;
 
     let tankMaterial = new BABYLON.StandardMaterial("tankMaterial", scene);
-    //let tankBack = tank[0].position.add(new BABYLON.Vector3(1,10,0) );
-    //tankMaterial.diffuseColor = new BABYLON.Color3.Red;
-    //tankMaterial.emissiveColor = new BABYLON.Color3.Blue;
     tankMaterial.diffuseTexture = new BABYLON.Texture("images/lightning.jpg", scene);
     tank.material = tankMaterial;
     // By default the box/tank is in 0, 0, 0, let's change that...
@@ -174,7 +191,7 @@ function createTank(scene) {
         BABYLON.PhysicsImpostor.BoxImpostor, { 
             mass: 0.5, 
             restitution: 0,
-            friction: .01 
+            friction: .01,
         }, 
         scene
     );
@@ -254,10 +271,14 @@ function createTank(scene) {
                 inputStates.down = false;
                 mb = false;
             } else if (event.key === " ") {
-                mup = false;
                 inputStates.space = false;
+                mup = false;
             }
         }, false);
     }
 
+function chargeJump(){
+    indicJump = false;
+    mjump = 0;
+}
 
