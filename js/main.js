@@ -5,6 +5,7 @@ let scene;
 let inputStates = {};
 window.onload = startGame;
 
+var mMouse = false;
 var mf = false;
 var mb = false;
 var ml = false;
@@ -17,16 +18,24 @@ var howmuchairmove = 1;
 var bhops = 0;
 var transpower = 1;
 
+//mouse
+var ex = 0;
+var ey = 0;
+var pex = 0;
+var pey = 0;
+
 function startGame() {
     canvas = document.querySelector("#myCanvas");
     engine = new BABYLON.Engine(canvas, true);
     scene = createScene();
     
     //add music
-   var music = new BABYLON.Sound("music", 'musics/musicFond.mp3', scene, soundReady, {loop:true,volume: 0.5})
+   /*var music = new BABYLON.Sound("music", 'musics/musicFond.mp3', scene, soundReady, {loop:true,volume: 0.5})
     function soundReady(){
         music.play();
-    }
+    }*/
+
+    
 
     // modify some default settings (i.e pointer events to prevent cursor to go 
     // out of the game window)
@@ -44,22 +53,13 @@ function startGame() {
 function createScene() {
     let scene = new BABYLON.Scene(engine);
     // enable physics
-
+    scene.collisionsEnabled = true;
 	scene.enablePhysics(new BABYLON.Vector3(0, -100, 0));
     scene.gravity = new BABYLON.Vector3(0, -100, 0);
     let ground = createGround(scene);
     let tank = createTank(scene);
     //////
-
-    BABYLON.SceneLoader.ImportMesh("", "scenes/", "dummy2.babylon", scene, function (meshes) {
-        var titan = meshes[0];
-        titan.scaling = new BABYLON.Vector3(10, 10, 10);
-        /*for(var i =0; scene.meshes.length; i+500){
-            meshes.checkCollisions = true;
-        }*/
-
-    });
-
+/*pour viser a la souris*/
 
     //////
     let followCamera = createFollowCamera(scene, tank);
@@ -91,7 +91,7 @@ function createGround(scene) {
                 ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground,
                     BABYLON.PhysicsImpostor.HeightmapImpostor, { mass: 0,
                                                                  restitution:0,
-                                                                 friction:.001
+                                                                 friction:.01
                                                                  },
                                                                  scene);   
     }
@@ -110,7 +110,6 @@ function createGround(scene) {
     );
     firstBuilding.physicsImpostor.physicsBody.linearDamping = 0.999;
     firstBuilding.physicsImpostor.physicsBody.angularDamping = 0.999999999999;
-
 
     ///////////////////////////////////d
     return ground;
@@ -165,12 +164,64 @@ function createFollowCamera(scene, tank) {
         var ey = event.movementY;
         rotate(tank, new BABYLON.Vector3(0, ex, 0), rotpower);
     }
+
+    var firePistol = function () {
+        var ray = camera.getForwardRay(100);
+        var hit = scene.pickWithRay(ray);
+        if (hit.hit) {
+            var hitt = BABYLON.Mesh.CreateSphere("hitt", 16, 1, scene);
+            hitt.position = hit.pickedPoint;
+        }
+    }
+
+    
     canvas.addEventListener("pointermove", onPointerMove, false);
     camera.position = tank.position.add(new BABYLON.Vector3(0, 2.5, 0));
     var eulerRot = BABYLON.Vector3.Zero();
 
     var update = function() {
+        
+        if (mMouse == true){
+        /**
+         * 4. In which direction camera is looking?
+         */
+        var origin = camera.position;
 
+        /**
+        * 5. Get camera's looking direction according to it's location in 3D
+        */
+        function vecToLocal(vector, mesh) {
+            var m = mesh.getWorldMatrix();
+            var v = BABYLON.Vector3.TransformCoordinates(vector, m);
+            return v;
+        }
+
+        var forward = new BABYLON.Vector3(0,0,1);
+	    forward = vecToLocal(forward, camera);
+
+	    var direction = forward.subtract(origin);
+	    direction = BABYLON.Vector3.Normalize(direction);
+
+        /**
+         * 6. Create a ray in that direction
+         */
+        var ray = new BABYLON.Ray(origin, direction);
+
+        /**
+         * 7. Get the picked mesh and the distance
+         */
+        var hit = scene.pickWithRay(ray);
+
+        if (hit.pickedMesh){
+            var dist = BABYLON.Vector3.Distance(camera.position, hit.pickedMesh.position);
+            if(dist<50){
+                firePistol();
+            }  
+        }
+                
+
+            mMouse = false;
+        } 
         if (mf == true) translate(tank, new BABYLON.Vector3(0, 0, 4+spood*howmuchairmove+bhops), transpower);
         if (mb == true) translate(tank, new BABYLON.Vector3(0, 0, -(2+spood*howmuchairmove+bhops)), transpower);
         if (ml == true) translate(tank, new BABYLON.Vector3(-(3+spood*howmuchairmove+bhops), 0, 0), transpower);
@@ -249,6 +300,7 @@ function createTank(scene) {
                 canvas.requestPointerLock();
             } else {
                 console.log("Pointer already locked");
+                mMouse = true;
             }
         }
 
@@ -371,7 +423,6 @@ const buildHouse = (width) => {
 /*
 ground.checkCollisions = true;
 //groundMaterial.wireframe=true;
-
         // for physic engine
         ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground,
             BABYLON.PhysicsImpostor.HeightmapImpostor, { mass: 0,
@@ -429,3 +480,4 @@ const buildRoof = (width) => {
     return roof;
 }
 ////////////////////////////////////////////////////////////////
+
