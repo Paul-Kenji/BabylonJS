@@ -59,7 +59,6 @@ function createScene() {
     let ground = createGround(scene);
     let tank = createTank(scene);
     //////
-/*pour viser a la souris*/
 
     //////
     let followCamera = createFollowCamera(scene, tank);
@@ -74,7 +73,7 @@ function createScene() {
 }
 
 function createGround(scene) {
-    const groundOptions = { width: 2000, height: 2000, subdivisions: 50, minHeight: 0, maxHeight: 100, onReady: onGroundCreated };
+    const groundOptions = { width: 1000, height: 1000, subdivisions: 200, minHeight: 0, maxHeight: 100, onReady: onGroundCreated };
     //scene is optional and defaults to the current scene
     const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap("gdhm", 'images/hmap1.png', groundOptions, scene);
 
@@ -87,13 +86,13 @@ function createGround(scene) {
         //to see all meshes
         groundMaterial.wireframe=true;
 
-                // for physic engine
-                ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground,
-                    BABYLON.PhysicsImpostor.HeightmapImpostor, { mass: 0,
-                                                                 restitution:0,
-                                                                 friction:.01
-                                                                 },
-                                                                 scene);   
+        // for physic engine
+            ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground,
+                BABYLON.PhysicsImpostor.HeightmapImpostor, { mass: 0,
+                restitution:0,
+                friction:.01
+                },
+                scene);   
     }
     let firstBuilding = new BABYLON.MeshBuilder.CreateBox("fistbuilding", {width: 5, height: 10, depth: 1.5}, scene);
     firstBuilding.position.x = 10;
@@ -102,9 +101,7 @@ function createGround(scene) {
     firstBuilding.physicsImpostor = new BABYLON.PhysicsImpostor(
         firstBuilding, 
         BABYLON.PhysicsImpostor.BoxImpostor, { 
-            mass: 1000, 
-            restitution: 0,
-            friction: 1,
+            mass: 0, 
         }, 
         scene
     );
@@ -174,7 +171,7 @@ function createFollowCamera(scene, tank) {
         }
     }
 
-    
+    //init
     canvas.addEventListener("pointermove", onPointerMove, false);
     camera.position = tank.position.add(new BABYLON.Vector3(0, 2.5, 0));
     var eulerRot = BABYLON.Vector3.Zero();
