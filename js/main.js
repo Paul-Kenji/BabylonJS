@@ -1,3 +1,5 @@
+import {buildBox} from "./Buildings.js";
+
 let canvas;
 let engine;
 let scene;
@@ -35,8 +37,6 @@ function startGame() {
         music.play();
     }*/
 
-    
-
     // modify some default settings (i.e pointer events to prevent cursor to go 
     // out of the game window)
     modifySettings();
@@ -58,16 +58,10 @@ function createScene() {
     scene.gravity = new BABYLON.Vector3(0, -100, 0);
     let ground = createGround(scene);
     let tank = createTank(scene);
-    //////
 
-    //////
     let followCamera = createFollowCamera(scene, tank);
     scene.activeCameras = followCamera;
     createLights(scene);
-
-//////////////////////////////////////
-    buildDwellings();
-//////////////////////////////////////
 
     return scene;
 }
@@ -94,20 +88,9 @@ function createGround(scene) {
                 },
                 scene);   
     }
-    let firstBuilding = new BABYLON.MeshBuilder.CreateBox("fistbuilding", {width: 5, height: 10, depth: 1.5}, scene);
-    firstBuilding.position.x = 10;
-    firstBuilding.position.y = 5;  //box created with default size so height is 1
 
-    firstBuilding.physicsImpostor = new BABYLON.PhysicsImpostor(
-        firstBuilding, 
-        BABYLON.PhysicsImpostor.BoxImpostor, { 
-            mass: 0,
-            friction:1, 
-        }, 
-        scene
-    );
-    firstBuilding.physicsImpostor.physicsBody.linearDamping = 0.999;
-    firstBuilding.physicsImpostor.physicsBody.angularDamping = 0.999999999999;
+    /*building*/
+    buildMap(scene);
     
     ///////////////////////////////////d
     return ground;
@@ -131,7 +114,7 @@ function createFollowCamera(scene, tank) {
     camera.minY = 0;
     camera.minZ = 0;
     camera.angularSensibility = 1000;
-    camera.position.y = 0.45;
+    camera.position.y = 0.60;
     camera.position = tank.position.add(new BABYLON.Vector3(0, 2.5, 0));
 
     var rotate = function (mesh, direction, power) {
@@ -167,9 +150,12 @@ function createFollowCamera(scene, tank) {
         var ray = camera.getForwardRay(100);
         var hit = scene.pickWithRay(ray);
         if (hit.hit) {
-            var hitt = BABYLON.Mesh.CreateSphere("hitt", 16, 1, scene);
-            hitt.position = hit.pickedPoint;
-            translate(tank, new BABYLON.Vector3(0, 0, 50), transpower); 
+            hit.position = hit.pickedPoint;
+            var a = hit.position.x;
+            var b = hit.position.y;
+            translate(tank, new BABYLON.Vector3(0,b,10), transpower); 
+            const rayHelper = new BABYLON.RayHelper(ray);
+            rayHelper.show(scene, BABYLON.Color3.Red());
         }
     }
 
@@ -213,11 +199,14 @@ function createFollowCamera(scene, tank) {
 
         if (hit.pickedMesh){
             var dist = BABYLON.Vector3.Distance(camera.position, hit.pickedMesh.position);
+            var i = 0;
             if(dist<50){
-                firePistol();
+                while(i<dist){
+                    firePistol();
+                    i++;
+                }
             }  
-        }
-                
+        }  
             mMouse = false;
         } 
         if (mf == true) translate(tank, new BABYLON.Vector3(0, 0, 4+spood*howmuchairmove+bhops), transpower); 
@@ -258,8 +247,8 @@ function createFollowCamera(scene, tank) {
 }
 
 function createTank(scene) {
-    let tank = new BABYLON.MeshBuilder.CreateBox("heroTank", {width: 1.5, height: 0.5, depth: 1.5}, scene);
-    let tank1 = new BABYLON.MeshBuilder.CreateBox("tank1", {width: 1.5, height: 0.5, depth: 1.5}, scene);
+    let tank = new BABYLON.MeshBuilder.CreateBox("heroTank", {width: 2.5, height: 1, depth: 2.5}, scene);
+    let tank1 = new BABYLON.MeshBuilder.CreateBox("tank1", {width: 2.5, height: 1, depth: 2.5}, scene);
 
     tank.position.y = 15;
     tank1.parent = tank;
@@ -371,126 +360,16 @@ function createTank(scene) {
 
 function chargeJump(){
     indicJump = false;
-    mjump = 0;
+    mjump = 0;s
 }
 
 ////////////////////////////////////////////////////////////////////////////
 /******Build Functions***********/
-const buildDwellings = () => {
-
-    const detached_house = buildHouse(1);
-    detached_house.rotation.y = -Math.PI / 16;
-    detached_house.position.x = -6.8;
-    detached_house.position.z = 2.5;
-
-    const semi_house = buildHouse(2);
-    semi_house .rotation.y = -Math.PI / 16;
-    semi_house.position.x = -4.5;
-    semi_house.position.z = 3;
-
-    const places = []; //each entry is an array [house type, rotation, x, z]
-    places.push([1, -Math.PI / 16, -6.8, 2.5 ]);
-    places.push([2, -Math.PI / 16, -4.5, 3 ]);
-    places.push([2, -Math.PI / 16, -1.5, 4 ]);
-    places.push([2, -Math.PI / 3, 1.5, 6 ]);
-    places.push([2, 15 * Math.PI / 16, -6.4, -1.5 ]);
-    places.push([1, 15 * Math.PI / 16, -4.1, -1 ]);
-    places.push([2, 15 * Math.PI / 16, -2.1, -0.5 ]);
-    places.push([1, 5 * Math.PI / 4, 0, -1 ]);
-    places.push([1, Math.PI + Math.PI / 2.5, 0.5, -3 ]);
-    places.push([2, Math.PI + Math.PI / 2.1, 0.75, -5 ]);
-    places.push([1, Math.PI + Math.PI / 2.25, 0.75, -7 ]);
-    places.push([2, Math.PI / 1.9, 4.75, -1 ]);
-    places.push([1, Math.PI / 1.95, 4.5, -3 ]);
-    places.push([2, Math.PI / 1.9, 4.75, -5 ]);
-    places.push([1, Math.PI / 1.9, 4.75, -7 ]);
-    places.push([2, -Math.PI / 3, 5.25, 2 ]);
-    places.push([1, -Math.PI / 3, 6, 4 ]);
-
-    //Create instances from the first two that were built 
-    const houses = [];
-    for (let i = 0; i < places.length; i++) {
-        if (places[i][0] === 1) {
-            houses[i] = detached_house.createInstance("house" + i);
-        }
-        else {
-            houses[i] = semi_house.createInstance("house" + i);
-        }
-        houses[i].rotation.y = places[i][1];
-        houses[i].position.x = places[i][2];
-        houses[i].position.z = places[i][3];
-
-        let maisonBox = new BABYLON.Mesh.CreateBox('', 5, scene);
-    maisonBox.showBoundingBox = true; // pour debug
-    maisonBox.isVisible = false; // si tu veux ne pas la voir mais pour debugger laisse à true
-    maisonBox.checkCollision = true;
-    maisonBox.position.x  = houses[i].position.x;
-    maisonBox.position.y  = houses[i].position.y;
-    maisonBox.position.z  = houses[i].position.z;
-    // pareil pour y et z et rotation si besoin...
-
-    houses[i].setParent(maisonBox);
-    }
-    
-
-}
-
-const buildHouse = (width) => {
-    const box = buildBox(width);
-    const roof = buildRoof(width);
-    return BABYLON.Mesh.MergeMeshes([box, roof], true, false, null, false, true);
+function buildMap(scene){
+    buildBox(5, 10, 1.5, scene);
 }
 
 
 
-
-const buildBox = (width) => {
-    //texture
-    const boxMat = new BABYLON.StandardMaterial("boxMat");
-    if (width == 2) {
-       boxMat.diffuseTexture = new BABYLON.Texture("https://assets.babylonjs.com/environments/semihouse.png") 
-    }
-    else {
-        boxMat.diffuseTexture = new BABYLON.Texture("https://assets.babylonjs.com/environments/cubehouse.png");   
-    }
-
-    //options parameter to set different images on each side
-    const faceUV = [];
-    if (width == 2) {
-        faceUV[0] = new BABYLON.Vector4(0.6, 0.0, 1.0, 1.0); //rear face
-        faceUV[1] = new BABYLON.Vector4(0.0, 0.0, 0.4, 1.0); //front face
-        faceUV[2] = new BABYLON.Vector4(0.4, 0, 0.6, 1.0); //right side
-        faceUV[3] = new BABYLON.Vector4(0.4, 0, 0.6, 1.0); //left side
-    }
-    else {
-        faceUV[0] = new BABYLON.Vector4(0.5, 0.0, 0.75, 1.0); //rear face
-        faceUV[1] = new BABYLON.Vector4(0.0, 0.0, 0.25, 1.0); //front face
-        faceUV[2] = new BABYLON.Vector4(0.25, 0, 0.5, 1.0); //right side
-        faceUV[3] = new BABYLON.Vector4(0.75, 0, 1.0, 1.0); //left side
-    }
-    // top 4 and bottom 5 not seen so not set
-
-    /**** World Objects *****/
-    const box = BABYLON.MeshBuilder.CreateBox("box", {width: width, faceUV: faceUV, wrap: true});
-    box.material = boxMat;
-    box.position.y = 0.5;
-
-    return box;
-}
-
-const buildRoof = (width) => {
-    //texture
-    const roofMat = new BABYLON.StandardMaterial("roofMat");
-    roofMat.diffuseTexture = new BABYLON.Texture("https://assets.babylonjs.com/environments/roof.jpg");
-
-    const roof = BABYLON.MeshBuilder.CreateCylinder("roof", {diameter: 1.3, height: 1.2, tessellation: 3});
-    roof.material = roofMat;
-    roof.scaling.x = 0.75;
-    roof.scaling.y = width;
-    roof.rotation.z = Math.PI / 2;
-    roof.position.y = 1.22;
-
-    return roof;
-}
 ////////////////////////////////////////////////////////////////
 
