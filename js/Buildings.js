@@ -1,13 +1,14 @@
-function buildBox(x, y, size, scene) {
-    let firstBuilding = new BABYLON.MeshBuilder.CreateBox("fistbuilding", {width: 5, height: 10, depth: 1.5}, scene);
-    firstBuilding.position.x = 10;
-    firstBuilding.position.y = 5;  //box created with default size so height is 1
+function buildBox(x, y, height, depth, scene) {
+    let firstBuilding = new BABYLON.MeshBuilder.CreateBox("fistbuilding", {width: 5, height: height, depth: depth}, scene);
+    firstBuilding.position.x = x;
+    firstBuilding.position.y = height/2;  //box created with default size so height is 1
+    firstBuilding.position.z = y;
 
     firstBuilding.physicsImpostor = new BABYLON.PhysicsImpostor(
         firstBuilding, 
         BABYLON.PhysicsImpostor.BoxImpostor, { 
             mass: 0,
-            friction:1, 
+            friction:0.5, 
         }, 
         scene
     );

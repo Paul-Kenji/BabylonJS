@@ -20,6 +20,9 @@ var howmuchairmove = 1;
 var bhops = 0;
 var transpower = 1;
 
+/*for test the contact*/
+var count = 0;
+
 //mouse
 var ex = 0;
 var ey = 0;
@@ -44,8 +47,6 @@ function startGame() {
     let tank = scene.getMeshByName("heroTank");
     engine.runRenderLoop(() => {
         let deltaTime = engine.getDeltaTime(); // remind you something ?
-
-        //tank.move();
         scene.render();
     });
 }
@@ -58,11 +59,13 @@ function createScene() {
     scene.gravity = new BABYLON.Vector3(0, -100, 0);
     let ground = createGround(scene);
     let tank = createTank(scene);
-
+    tank.actionManager = new BABYLON.ActionManager(scene);
+    
     let followCamera = createFollowCamera(scene, tank);
     scene.activeCameras = followCamera;
     createLights(scene);
-
+    /*building*/
+    buildMap(scene, tank);
     return scene;
 }
 
@@ -89,8 +92,7 @@ function createGround(scene) {
                 scene);   
     }
 
-    /*building*/
-    buildMap(scene);
+
     
     ///////////////////////////////////d
     return ground;
@@ -151,9 +153,8 @@ function createFollowCamera(scene, tank) {
         var hit = scene.pickWithRay(ray);
         if (hit.hit) {
             hit.position = hit.pickedPoint;
-            var a = hit.position.x;
             var b = hit.position.y;
-            translate(tank, new BABYLON.Vector3(0,b,10), transpower); 
+            translate(tank, new BABYLON.Vector3(0,b/1.5,5), transpower); 
             const rayHelper = new BABYLON.RayHelper(ray);
             rayHelper.show(scene, BABYLON.Color3.Red());
         }
@@ -216,7 +217,7 @@ function createFollowCamera(scene, tank) {
         if (mup == true) {
             let origine = new BABYLON.Vector3(tank.position.x, tank.position.y, tank.position.z);
             if( mjump == 0){ // first jump
-                tank.physicsImpostor.applyImpulse(new BABYLON.Vector3(0, 20, 0), origine);
+                tank.physicsImpostor.applyImpulse(new BABYLON.Vector3(0, 50, 0), origine);
                 var musicJump = new BABYLON.Sound("musicjump", 'musics/jump.mp3', scene, soundReady, {loop:false,volume: 0.5})
                 function soundReady(){
                     musicJump.play();
@@ -224,12 +225,12 @@ function createFollowCamera(scene, tank) {
                 
             }
             else if( mjump == 1){ //second jump
-                tank.physicsImpostor.applyImpulse(new BABYLON.Vector3(0, 10, 0), origine);
+                tank.physicsImpostor.applyImpulse(new BABYLON.Vector3(0, 25, 0), origine);
                 var musicJump = new BABYLON.Sound("musicjump", 'musics/jump.mp3', scene, soundReady, {loop:false,volume: 0.5})
                 function soundReady(){
                     musicJump.play();
                 }
-                setTimeout(chargeJump, 800);
+                setTimeout(chargeJump, 1500);
             }
             mjump ++;
             mup = false;
@@ -266,15 +267,6 @@ function createTank(scene) {
         }, 
         scene
     );
-    /*tank1.physicsImpostor = new BABYLON.PhysicsImpostor(
-        tank1, 
-        BABYLON.PhysicsImpostor.BoxImpostor, { 
-            mass: 0.5, 
-            restitution: 0,
-            friction: .01,
-        }, 
-        scene
-    );*/
 
     tank.physicsImpostor.physicsBody.linearDamping = 0.999;
     tank.physicsImpostor.physicsBody.angularDamping = 0.999999999999;
@@ -360,13 +352,33 @@ function createTank(scene) {
 
 function chargeJump(){
     indicJump = false;
-    mjump = 0;s
+    mjump = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////
 /******Build Functions***********/
-function buildMap(scene){
-    buildBox(5, 10, 1.5, scene);
+function buildMap(scene, tank){
+    var taMaison = [];
+    taMaison.push(buildBox(5, 10, 10, 10, scene));
+    taMaison.push(buildBox(20, 20, 20, 10, scene));
+
+    taMaison.forEach(tree => { // ou maisonBox
+        tank.actionManager.registerAction(new BABYLON.ExecuteCodeAction(
+            {
+                trigger: BABYLON.ActionManager.OnIntersectionEnterTrigger,
+                parameter: tank
+            },
+            () => {
+                // il y a une collision on fait quelque chose
+                // déclencher ici particules sur le tree
+                // a toi de voir..... souvent c'est pour détecter boulet de canon vs dude -> on fait dude.dispose() pour le faire disparaitre
+                console.log("hello touché"+ count);
+                count++;
+            }
+        )
+        );
+    });
+
 }
 
 
