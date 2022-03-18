@@ -7,7 +7,8 @@ let scene;
 let inputStates = {};
 window.onload = startGame;
 
-var mMouse = false;
+var mMouseR = false;
+var mMouseL = false;
 var mf = false;
 var mb = false;
 var ml = false;
@@ -22,12 +23,19 @@ var transpower = 1;
 
 /*for test the contact*/
 var count = 0;
+var startHit = 0;
+var hitMoment = 0;
+var b = 0;
+var c = 0;
 
 //mouse
 var ex = 0;
 var ey = 0;
 var pex = 0;
 var pey = 0;
+var left, right;
+left = 0;
+right = 2;
 
 function startGame() {
     canvas = document.querySelector("#myCanvas");
@@ -56,7 +64,7 @@ function createScene() {
     // enable physics
     scene.collisionsEnabled = true;
 	scene.enablePhysics(new BABYLON.Vector3(0, -100, 0));
-    scene.gravity = new BABYLON.Vector3(0, -100, 0);
+    scene.gravity = new BABYLON.Vector3(0, 0, 0);
     let ground = createGround(scene);
     let tank = createTank(scene);
     tank.actionManager = new BABYLON.ActionManager(scene);
@@ -70,7 +78,7 @@ function createScene() {
 }
 
 function createGround(scene) {
-    const groundOptions = { width: 2000, height: 2000, subdivisions: 20, minHeight: 0, maxHeight: 100, onReady: onGroundCreated };
+    const groundOptions = { width: 1000, height: 1000, subdivisions: 10, minHeight: 0, maxHeight: 300, onReady: onGroundCreated };
     //scene is optional and defaults to the current scene
     const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap("gdhm", 'images/hmap1.png', groundOptions, scene);
 
@@ -99,11 +107,16 @@ function createGround(scene) {
 }
 
 function createLights(scene) {
-    // i.e sun light with all light rays parallels, the vector is the direction.
-    let light0 = new BABYLON.DirectionalLight("dir0", new BABYLON.Vector3(10, -1, 0), scene);
-    //var light = new BABYLON.PointLight("myPointLight", new BABYLON.Vector3(0, 3, 0), scene);
-    light0.intensity = 15;
-    light0.diffuse = new BABYLON.Color3(1, 1, 1);
+
+    var light0 = new BABYLON.PointLight("Omni0", new BABYLON.Vector3(0, 10, 0), scene);
+    // Lights colors
+    light0.diffuse = new BABYLON.Color3(1, 0, 0);
+    light0.specular = new BABYLON.Color3(1, 0, 0);
+
+    var light1 = new BABYLON.PointLight("Omni1", new BABYLON.Vector3(100, 0, 100), scene);
+    // Lights colors
+    light1.diffuse = new BABYLON.Color3(1, 1, 0);
+    light1.specular = new BABYLON.Color3(1, 1, 0);
 
 }
 
@@ -148,18 +161,6 @@ function createFollowCamera(scene, tank) {
         rotate(tank, new BABYLON.Vector3(0, ex, 0), rotpower);
     }
 
-    var firePistol = function () {
-        var ray = camera.getForwardRay(100);
-        var hit = scene.pickWithRay(ray);
-        if (hit.hit) {
-            hit.position = hit.pickedPoint;
-            var b = hit.position.y;
-            translate(tank, new BABYLON.Vector3(0,b/1.5,5), transpower); 
-            const rayHelper = new BABYLON.RayHelper(ray);
-            rayHelper.show(scene, BABYLON.Color3.Red());
-        }
-    }
-
     //init
     canvas.addEventListener("pointermove", onPointerMove, false);
     camera.position = tank.position.add(new BABYLON.Vector3(0, 2.5, 0));
@@ -167,48 +168,65 @@ function createFollowCamera(scene, tank) {
 
     var update = function() {
         
-        if (mMouse == true){
-        /**
-         * 4. In which direction camera is looking?
-         */
-        var origin = camera.position;
+        if (mMouseR == true){
+            //4. In which direction camera is looking?
+            var origin = camera.position;
 
-        /**
-        * 5. Get camera's looking direction according to it's location in 3D
-        */
-        function vecToLocal(vector, mesh) {
-            var m = mesh.getWorldMatrix();
-            var v = BABYLON.Vector3.TransformCoordinates(vector, m);
-            return v;
-        }
+            //5. Get camera's looking direction according to it's location in 3D
+            function vecToLocal(vector, mesh) {
+                var m = mesh.getWorldMatrix();
+                var v = BABYLON.Vector3.TransformCoordinates(vector, m);
+                return v;
+            }
 
-        var forward = new BABYLON.Vector3(0,0,1);
-	    forward = vecToLocal(forward, camera);
+            var forward = new BABYLON.Vector3(0,0,1);
+            forward = vecToLocal(forward, camera);
 
-	    var direction = forward.subtract(origin);
-	    direction = BABYLON.Vector3.Normalize(direction);
+            var direction = forward.subtract(origin);
+            direction = BABYLON.Vector3.Normalize(direction);
 
-        /**
-         * 6. Create a ray in that direction
-         */
-        var ray = new BABYLON.Ray(origin, direction);
+            //6. Create a ray in that direction
+            var ray = new BABYLON.Ray(origin, direction);
 
-        /**
-         * 7. Get the picked mesh and the distance
-         */
-        var hit = scene.pickWithRay(ray);
+            //7. Get the picked mesh and the distance
+            var hit = scene.pickWithRay(ray);
 
-        if (hit.pickedMesh){
-            var dist = BABYLON.Vector3.Distance(camera.position, hit.pickedMesh.position);
-            var i = 0;
-            if(dist<50){
-                while(i<dist){
-                    firePistol();
-                    i++;
-                }
+            if (hit.pickedMesh){
+                var distPicked = BABYLON.Vector3.Distance(camera.position, hit.pickedMesh.position);
+
+                if(distPicked<50){
+                    /*if good touch*/
+                    if(hit.hit) {
+                        var distTank = BABYLON.Vector3.Distance(tank.position, hit.pickedMesh.position);
+                        if (distTank>5){
+                            if (count <3){
+                                /*add sound grap*/
+                                var musicJump = new BABYLON.Sound("grap", 'musics/grap.mp3', scene, soundReady, {loop:false,volume: 0.5})
+                                function soundReady(){
+                                musicJump.play();
+                                }
+                                count++;
+                                var ray = camera.getForwardRay(distTank);
+                                const rayHelper = new BABYLON.RayHelper(ray);
+                                rayHelper.show(scene, BABYLON.Color3.Red());
+                                hit.position = hit.pickedPoint;
+                                b = hit.position.y;
+                                c = hit.position.z;
+                            }
+                            else if (count>3) {
+                                count = 0;
+                            }
+                            translate(tank, new BABYLON.Vector3(0,b/2,c/2), transpower);
+                        }
+                        else if (distTank <= 5){
+                            translate(tank, new BABYLON.Vector3(0,0,0), 0);
+                            mMouseR = false;
+                            console.log("counter" + count);
+                        }
+                        distTank = BABYLON.Vector3.Distance(tank.position, hit.pickedMesh.position);
+                    }
+                }  
             }  
-        }  
-            mMouse = false;
         } 
         if (mf == true) translate(tank, new BABYLON.Vector3(0, 0, 4+spood*howmuchairmove+bhops), transpower); 
         if (mb == true) translate(tank, new BABYLON.Vector3(0, 0, -(2+spood*howmuchairmove+bhops)), transpower);
@@ -217,7 +235,7 @@ function createFollowCamera(scene, tank) {
         if (mup == true) {
             let origine = new BABYLON.Vector3(tank.position.x, tank.position.y, tank.position.z);
             if( mjump == 0){ // first jump
-                tank.physicsImpostor.applyImpulse(new BABYLON.Vector3(0, 50, 0), origine);
+                tank.physicsImpostor.applyImpulse(new BABYLON.Vector3(0, 75, 0), origine);
                 var musicJump = new BABYLON.Sound("musicjump", 'musics/jump.mp3', scene, soundReady, {loop:false,volume: 0.5})
                 function soundReady(){
                     musicJump.play();
@@ -225,7 +243,7 @@ function createFollowCamera(scene, tank) {
                 
             }
             else if( mjump == 1){ //second jump
-                tank.physicsImpostor.applyImpulse(new BABYLON.Vector3(0, 25, 0), origine);
+                tank.physicsImpostor.applyImpulse(new BABYLON.Vector3(0, 40, 0), origine);
                 var musicJump = new BABYLON.Sound("musicjump", 'musics/jump.mp3', scene, soundReady, {loop:false,volume: 0.5})
                 function soundReady(){
                     musicJump.play();
@@ -282,14 +300,24 @@ function createTank(scene) {
 
         // as soon as we click on the game window, the mouse pointer is "locked"
         // you will have to press ESC to unlock it
-        scene.onPointerDown = () => {
+        scene.onPointerDown = (e) => {
             if (!scene.alreadyLocked) {
                 console.log("requesting pointer lock");
                 canvas.requestPointerLock();
-            } else {
-                console.log("Pointer already locked");
-                mMouse = true;
+            } else if(e.button === right){
+                count =0;
+                mMouseR = true;
             }
+            else if(e.button === left){
+                mMouseL = true;
+            }
+        }
+
+        scene.onPointerUp = (e) => {
+            if (e.button === right) {
+                mMouseR = false;
+                console.log("Mouse up ");
+            }         
         }
 
         document.addEventListener("pointerlockchange", () => {
@@ -361,6 +389,10 @@ function buildMap(scene, tank){
     var taMaison = [];
     taMaison.push(buildBox(5, 10, 10, 10, scene));
     taMaison.push(buildBox(20, 20, 20, 10, scene));
+    taMaison.push(buildBox(25, 25, 20, 10, scene));
+    taMaison.push(buildBox(5, 5, 5, 5, scene));
+    taMaison.push(buildBox(30, 30, 30, 30, scene));
+    taMaison.push(buildBox(15, 35, 42, 50, scene));
 
     taMaison.forEach(tree => { // ou maisonBox
         tank.actionManager.registerAction(new BABYLON.ExecuteCodeAction(
@@ -368,12 +400,11 @@ function buildMap(scene, tank){
                 trigger: BABYLON.ActionManager.OnIntersectionEnterTrigger,
                 parameter: tank
             },
-            () => {
+            (evt) => {
                 // il y a une collision on fait quelque chose
                 // déclencher ici particules sur le tree
                 // a toi de voir..... souvent c'est pour détecter boulet de canon vs dude -> on fait dude.dispose() pour le faire disparaitre
-                console.log("hello touché"+ count);
-                count++;
+            console.log("contact");
             }
         )
         );
