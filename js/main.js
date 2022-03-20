@@ -1,4 +1,8 @@
 import {buildBox} from "./Buildings.js";
+import {getRandomInt} from "./Buildings.js";
+import {createLights} from "./Buildings.js";
+import {startChrono} from "./Buildings.js";
+import {getChrono} from "./Buildings.js";
 
 let canvas;
 let engine;
@@ -20,13 +24,19 @@ var spood = 0;
 var howmuchairmove = 1;
 var bhops = 0;
 var transpower = 1;
+/*start chrono*/
+var sc = 0;
 
 /*for test the contact*/
 var count = 0;
+var start = false;
+var countRay = 0;
+var rayHelper = null;
 var startHit = 0;
 var hitMoment = 0;
 var b = 0;
 var c = 0;
+var rayList = [];
 
 //mouse
 var ex = 0;
@@ -41,9 +51,8 @@ function startGame() {
     canvas = document.querySelector("#myCanvas");
     engine = new BABYLON.Engine(canvas, true);
     scene = createScene();
-    
     //add music
-   /*var music = new BABYLON.Sound("music", 'musics/musicFond.mp3', scene, soundReady, {loop:true,volume: 0.5})
+    /*var music = new BABYLON.Sound("music", 'musics/musicFond.mp3', scene, soundReady, {loop:true,volume: 0.5})
     function soundReady(){
         music.play();
     }*/
@@ -54,6 +63,7 @@ function startGame() {
 
     let tank = scene.getMeshByName("heroTank");
     engine.runRenderLoop(() => {
+        document.getElementById("score").innerText = " TIME : " + getChrono(sc, start);
         let deltaTime = engine.getDeltaTime(); // remind you something ?
         scene.render();
     });
@@ -73,7 +83,7 @@ function createScene() {
     scene.activeCameras = followCamera;
     createLights(scene);
     /*building*/
-    buildMap(scene, tank);
+    buildMap(scene);
     return scene;
 }
 
@@ -84,12 +94,12 @@ function createGround(scene) {
 
     function onGroundCreated() {
         const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
-        groundMaterial.diffuseTexture = new BABYLON.Texture("images/grass.jpg");
+        groundMaterial.diffuseTexture = new BABYLON.Texture("images/plat.png", scene);
         ground.material = groundMaterial;
         // to be taken into account by collision detection
         ground.checkCollisions = true;
         //to see all meshes
-        groundMaterial.wireframe=true;
+        groundMaterial.wireframe=false;
 
         // for physic engine
             ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground,
@@ -98,26 +108,8 @@ function createGround(scene) {
                 friction:.01
                 },
                 scene);   
-    }
-
-
-    
-    ///////////////////////////////////d
+    }  
     return ground;
-}
-
-function createLights(scene) {
-
-    var light0 = new BABYLON.PointLight("Omni0", new BABYLON.Vector3(0, 10, 0), scene);
-    // Lights colors
-    light0.diffuse = new BABYLON.Color3(1, 0, 0);
-    light0.specular = new BABYLON.Color3(1, 0, 0);
-
-    var light1 = new BABYLON.PointLight("Omni1", new BABYLON.Vector3(100, 0, 100), scene);
-    // Lights colors
-    light1.diffuse = new BABYLON.Color3(1, 1, 0);
-    light1.specular = new BABYLON.Color3(1, 1, 0);
-
 }
 
 function createFollowCamera(scene, tank) {
@@ -194,7 +186,7 @@ function createFollowCamera(scene, tank) {
             if (hit.pickedMesh){
                 var distPicked = BABYLON.Vector3.Distance(camera.position, hit.pickedMesh.position);
 
-                if(distPicked<50){
+                if(distPicked<150){
                     /*if good touch*/
                     if(hit.hit) {
                         var distTank = BABYLON.Vector3.Distance(tank.position, hit.pickedMesh.position);
@@ -206,12 +198,14 @@ function createFollowCamera(scene, tank) {
                                 musicJump.play();
                                 }
                                 count++;
-                                var ray = camera.getForwardRay(distTank);
-                                const rayHelper = new BABYLON.RayHelper(ray);
+                                var rayP = camera.getForwardRay(distTank);
+                                rayHelper = new BABYLON.RayHelper(rayP);
                                 rayHelper.show(scene, BABYLON.Color3.Red());
+                                countRay++;
                                 hit.position = hit.pickedPoint;
                                 b = hit.position.y;
                                 c = hit.position.z;
+                                rayList.push(rayHelper);
                             }
                             else if (count>3) {
                                 count = 0;
@@ -220,18 +214,18 @@ function createFollowCamera(scene, tank) {
                         }
                         else if (distTank <= 5){
                             translate(tank, new BABYLON.Vector3(0,0,0), 0);
-                            mMouseR = false;
                             console.log("counter" + count);
+                            mMouseR = false; 
                         }
                         distTank = BABYLON.Vector3.Distance(tank.position, hit.pickedMesh.position);
                     }
                 }  
             }  
         } 
-        if (mf == true) translate(tank, new BABYLON.Vector3(0, 0, 4+spood*howmuchairmove+bhops), transpower); 
+        if (mf == true) translate(tank, new BABYLON.Vector3(0, 0, 4+spood*howmuchairmove+bhops), transpower*1.5); 
         if (mb == true) translate(tank, new BABYLON.Vector3(0, 0, -(2+spood*howmuchairmove+bhops)), transpower);
-        if (ml == true) translate(tank, new BABYLON.Vector3(-(3+spood*howmuchairmove+bhops), 0, 0), transpower);
-        if (mr == true) translate(tank, new BABYLON.Vector3(3+spood*howmuchairmove+bhops, 0, 0), transpower);
+        if (ml == true) translate(tank, new BABYLON.Vector3(-(3+spood*howmuchairmove+bhops), 0, 0), transpower*1.5);
+        if (mr == true) translate(tank, new BABYLON.Vector3(3+spood*howmuchairmove+bhops, 0, 0), transpower*1.5);
         if (mup == true) {
             let origine = new BABYLON.Vector3(tank.position.x, tank.position.y, tank.position.z);
             if( mjump == 0){ // first jump
@@ -258,23 +252,43 @@ function createFollowCamera(scene, tank) {
         camera.position = tank.position.add(new BABYLON.Vector3(0, 2.5, 0));
         tank.physicsImpostor.physicsBody.quaternion.toEuler(eulerRot); // adjust eulerRot value
         camera.rotation.y = eulerRot.y; // use adjusted value
-    }
 
+        /*delete ray when tank touch the ground*/
+        if (tank.position.y <=3){
+            countRay = 0;
+            rayList.forEach(rayHelper => {
+                rayHelper.dispose();
+            });
+        }
+
+        /*increase the speed of the fall*/
+        if ((tank.position.y >=3 && start !=false)  
+            && (mMouseR != true) 
+            && (mf != true) 
+            && (mb != true) 
+            && (ml != true)
+            && (mr != true)
+            && (mup != true)){
+            translate(tank, new BABYLON.Vector3(0, -5, 0), transpower); 
+        }
+        
+    }
     scene.registerBeforeRender(function() {
         update();
     });
 }
 
 function createTank(scene) {
-    let tank = new BABYLON.MeshBuilder.CreateBox("heroTank", {width: 2.5, height: 1, depth: 2.5}, scene);
-    let tank1 = new BABYLON.MeshBuilder.CreateBox("tank1", {width: 2.5, height: 1, depth: 2.5}, scene);
-
+    let tank = new BABYLON.MeshBuilder.CreateBox("heroTank", {width: 2, height: 1, depth: 2}, scene);
+    let tank1 = new BABYLON.MeshBuilder.CreateBox("tank1", {width: 2, height: 1, depth: 2}, scene);
+    tank.position.x = 295;
+    tank.position.z = 295;
     tank.position.y = 15;
     tank1.parent = tank;
 
     let tankMaterial = new BABYLON.StandardMaterial("tankMaterial", scene);
-    tankMaterial.diffuseTexture = new BABYLON.Texture("images/lightning.jpg", scene);
-    tank.material = tankMaterial;
+    tankMaterial.diffuseTexture = new BABYLON.Texture("images/bob.png", scene);
+    tank1.material = tankMaterial;
     // By default the box/tank is in 0, 0, 0, let's change that...
     tank.physicsImpostor = new BABYLON.PhysicsImpostor(
         tank, 
@@ -285,7 +299,6 @@ function createTank(scene) {
         }, 
         scene
     );
-
     tank.physicsImpostor.physicsBody.linearDamping = 0.999;
     tank.physicsImpostor.physicsBody.angularDamping = 0.999999999999;
 
@@ -304,6 +317,8 @@ function createTank(scene) {
             if (!scene.alreadyLocked) {
                 console.log("requesting pointer lock");
                 canvas.requestPointerLock();
+                start = true;
+                sc = startChrono();
             } else if(e.button === right){
                 count =0;
                 mMouseR = true;
@@ -354,7 +369,11 @@ function createTank(scene) {
             } else if (event.key === " ") {
                 inputStates.space = true;
                 mup = true;
+            //to reload the page
+            } else if ((event.key === "f") || (event.key === "F")) {
+                window.location.reload();
             }
+            
         }, false);
 
         //if the key will be released, change the states object 
@@ -385,34 +404,20 @@ function chargeJump(){
 
 ////////////////////////////////////////////////////////////////////////////
 /******Build Functions***********/
-function buildMap(scene, tank){
+function buildMap(scene){
     var taMaison = [];
-    taMaison.push(buildBox(5, 10, 10, 10, scene));
-    taMaison.push(buildBox(20, 20, 20, 10, scene));
-    taMaison.push(buildBox(25, 25, 20, 10, scene));
-    taMaison.push(buildBox(5, 5, 5, 5, scene));
-    taMaison.push(buildBox(30, 30, 30, 30, scene));
-    taMaison.push(buildBox(15, 35, 42, 50, scene));
-
-    taMaison.forEach(tree => { // ou maisonBox
-        tank.actionManager.registerAction(new BABYLON.ExecuteCodeAction(
-            {
-                trigger: BABYLON.ActionManager.OnIntersectionEnterTrigger,
-                parameter: tank
-            },
-            (evt) => {
-                // il y a une collision on fait quelque chose
-                // déclencher ici particules sur le tree
-                // a toi de voir..... souvent c'est pour détecter boulet de canon vs dude -> on fait dude.dispose() pour le faire disparaitre
-            console.log("contact");
-            }
-        )
-        );
-    });
+    var randomIndexLoop = getRandomInt(50, 80);
+    while (randomIndexLoop>0){
+        var randomX = getRandomInt(-300, 280);
+        var randomY = getRandomInt(-300, 280);
+        var randomW = getRandomInt(5, 50);
+        var randomH = getRandomInt(5, 300);
+        var randomD = getRandomInt(5, 50);
+        taMaison.push(buildBox(randomX, randomY, randomW, randomH, randomD, scene));
+        randomIndexLoop--;
+    }
 
 }
-
-
-
 ////////////////////////////////////////////////////////////////
+
 
