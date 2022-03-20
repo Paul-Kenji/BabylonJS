@@ -26,6 +26,7 @@ var bhops = 0;
 var transpower = 1;
 /*start chrono*/
 var sc = 0;
+var score = 0;
 
 /*for test the contact*/
 var count = 0;
@@ -46,16 +47,17 @@ var pey = 0;
 var left, right;
 left = 0;
 right = 2;
+var oraCount = 0;
 
 function startGame() {
     canvas = document.querySelector("#myCanvas");
     engine = new BABYLON.Engine(canvas, true);
     scene = createScene();
     //add music
-    /*var music = new BABYLON.Sound("music", 'musics/musicFond.mp3', scene, soundReady, {loop:true,volume: 0.5})
+    var music = new BABYLON.Sound("music", 'musics/musicFond.mp3', scene, soundReady, {loop:true,volume: 0.1})
     function soundReady(){
         music.play();
-    }*/
+    }
 
     // modify some default settings (i.e pointer events to prevent cursor to go 
     // out of the game window)
@@ -63,7 +65,9 @@ function startGame() {
 
     let tank = scene.getMeshByName("heroTank");
     engine.runRenderLoop(() => {
-        document.getElementById("score").innerText = " TIME : " + getChrono(sc, start);
+        document.getElementById("timer").innerText = " TIME : " + getChrono(sc, start);
+        document.getElementById("rules").innerText = "Press 'F' to retry! \n Lowest score win! \n";
+        document.getElementById("score").innerText = " SCORE : " + score;
         let deltaTime = engine.getDeltaTime(); // remind you something ?
         scene.render();
     });
@@ -88,6 +92,7 @@ function createScene() {
 }
 
 function createGround(scene) {
+    
     const groundOptions = { width: 1000, height: 1000, subdivisions: 10, minHeight: 0, maxHeight: 300, onReady: onGroundCreated };
     //scene is optional and defaults to the current scene
     const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap("gdhm", 'images/hmap1.png', groundOptions, scene);
@@ -160,7 +165,6 @@ function createFollowCamera(scene, tank) {
 
     var update = function() {
         
-        if (mMouseR == true){
             //4. In which direction camera is looking?
             var origin = camera.position;
 
@@ -182,7 +186,9 @@ function createFollowCamera(scene, tank) {
 
             //7. Get the picked mesh and the distance
             var hit = scene.pickWithRay(ray);
+            
 
+        if (mMouseR == true){
             if (hit.pickedMesh){
                 var distPicked = BABYLON.Vector3.Distance(camera.position, hit.pickedMesh.position);
 
@@ -210,7 +216,7 @@ function createFollowCamera(scene, tank) {
                             else if (count>3) {
                                 count = 0;
                             }
-                            translate(tank, new BABYLON.Vector3(0,b/2,c/2), transpower);
+                            translate(tank, new BABYLON.Vector3(0,b/1.75,c/2), transpower);
                         }
                         else if (distTank <= 5){
                             translate(tank, new BABYLON.Vector3(0,0,0), 0);
@@ -262,14 +268,27 @@ function createFollowCamera(scene, tank) {
         }
 
         /*increase the speed of the fall*/
-        if ((tank.position.y >=3 && start !=false)  
-            && (mMouseR != true) 
-            && (mf != true) 
-            && (mb != true) 
-            && (ml != true)
-            && (mr != true)
-            && (mup != true)){
-            translate(tank, new BABYLON.Vector3(0, -5, 0), transpower); 
+        if (tank.position.y >=3 && start !=false){
+            translate(tank, new BABYLON.Vector3(0, -1, 0), transpower); 
+        }
+
+        /*attack on titan*/
+        if (mMouseL == true){
+            /*add sound JOJO*/
+            var ora = new BABYLON.Sound("ora", 'musics/ora.mp3', scene, soundReady, {loop:false,volume: 2})
+            function soundReady(){
+                ora.play();
+            }
+            if (hit.pickedMesh){
+                var distPicked = BABYLON.Vector3.Distance(camera.position, hit.pickedMesh.position);
+                if(distPicked<5){
+                    oraCount++;
+                    if(oraCount == 5){
+                        score = getChrono(sc, start);
+                    }
+                }
+            }
+            mMouseL = false;
         }
         
     }
@@ -413,11 +432,10 @@ function buildMap(scene){
         var randomW = getRandomInt(5, 50);
         var randomH = getRandomInt(5, 300);
         var randomD = getRandomInt(5, 50);
-        taMaison.push(buildBox(randomX, randomY, randomW, randomH, randomD, scene));
+        taMaison.push(buildBox(randomX, randomY, randomW, randomH, randomD, scene, false));
         randomIndexLoop--;
     }
-
+    /*build goal*/
+    taMaison.push(buildBox(0, 0, 30, 250, 30, scene, true));
 }
 ////////////////////////////////////////////////////////////////
-
-

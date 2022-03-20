@@ -1,38 +1,65 @@
-function buildBox(x, y, width, height, depth, scene) {
+function buildBox(x, y, width, height, depth, scene, goal) {
 
     const boxMat = new BABYLON.StandardMaterial("boxMat");
     boxMat.diffuseTexture = new BABYLON.Texture("images/plat.png", scene);
-/*
-    const faceUV = [];
-    faceUV[0] = new BABYLON.Vector4(0.5, 0.0, 0.75, 1.0); //rear face
-    faceUV[1] = new BABYLON.Vector4(0.0, 0.0, 0.25, 1.0); //front face
-    faceUV[2] = new BABYLON.Vector4(0.25, 0, 0.5, 1.0); //right side
-    faceUV[3] = new BABYLON.Vector4(0.75, 0, 1.0, 1.0); //left side
-    faceUV[4] = new BABYLON.Vector4(0.75, 0, 1.0, 1.0); //top side*/
 
     let firstBuilding = new BABYLON.MeshBuilder.CreateBox("fistbuilding", {width: width, height: height, depth: depth}, scene);
     firstBuilding.position.x = x;
     firstBuilding.position.y = height/2;  //box created with default size so height is 1
     firstBuilding.position.z = y;
-
+            
     firstBuilding.physicsImpostor = new BABYLON.PhysicsImpostor(
-        firstBuilding, 
+    firstBuilding, 
         BABYLON.PhysicsImpostor.BoxImpostor, { 
             mass: 0,
             restitution: 0,
             friction: 0.5, 
-        }, 
-        scene
-    );
+            }, 
+            scene
+            );
     firstBuilding.physicsImpostor.physicsBody.linearDamping = 0.999;
     firstBuilding.physicsImpostor.physicsBody.angularDamping = 0.999999999999;
-
+            
     firstBuilding.material = boxMat;
+
+    if (goal==true){
+        const goalMat = new BABYLON.StandardMaterial("goalMat");
+        goalMat.diffuseTexture = new BABYLON.Texture("images/titanHead.jpg", scene);
+
+        let goalBuilding = new BABYLON.MeshBuilder.CreateBox("heroTank", {width: 2, height: 2, depth: 2}, scene);
+        goalBuilding.position.x = 0;
+        goalBuilding.position.z = 0;
+        goalBuilding.position.y = 252;
+
+        goalBuilding.physicsImpostor = new BABYLON.PhysicsImpostor(
+        goalBuilding, 
+            BABYLON.PhysicsImpostor.BoxImpostor, { 
+                mass: 0,
+                restitution: 0,
+                friction: 1, 
+                }, 
+                scene
+                );
+        goalBuilding.physicsImpostor.physicsBody.linearDamping = 0.999;
+        goalBuilding.physicsImpostor.physicsBody.angularDamping = 0.999999999999;
+                    
+        goalBuilding.material = goalMat;
+
+            // Create and load the sound async
+        var music = new BABYLON.Sound("rumblingCut", "musics/rumblingCut.mp3", scene, function () {
+            // Call with the sound is ready to be played (loaded & decoded)
+            // TODO: add your logic
+            console.log("Sound ready to be played!");
+        }, { loop: true, autoplay: true });
+
+        // Sound will now follow the mesh position
+        music.attachToMesh(goalBuilding);
+    }
 }
 
 function createLights(scene) {
 
-    var light0 = new BABYLON.PointLight("Omni0", new BABYLON.Vector3(0, 500, 0), scene);
+    var light0 = new BABYLON.PointLight("Omni0", new BABYLON.Vector3(0, 800, 0), scene);
     // Lights colors
     light0.diffuse = new BABYLON.Color3(50, 50, 300);
     light0.specular = new BABYLON.Color3(1, 1, 1);
