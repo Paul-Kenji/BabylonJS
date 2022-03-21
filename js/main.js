@@ -66,7 +66,7 @@ function startGame() {
     let tank = scene.getMeshByName("heroTank");
     engine.runRenderLoop(() => {
         document.getElementById("timer").innerText = " TIME : " + getChrono(sc, start);
-        document.getElementById("rules").innerText = "Press 'F' to retry! \n Lowest score win! \n";
+        document.getElementById("rules").innerText = "PRESS 'F' TO RETRY! \n Play with Mouse: \n Right click: grap wall& Left click: attack \n Find the the noisy box and kill it as quick as possible\n";
         document.getElementById("score").innerText = " SCORE : " + score;
         let deltaTime = engine.getDeltaTime(); // remind you something ?
         scene.render();
