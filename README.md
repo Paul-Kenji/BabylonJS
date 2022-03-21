@@ -2,11 +2,8 @@
 projet Javascript BabylonJS
 
 TO DO:
-  - ajout map pour temps final ( but)
-  - ajout boite titan a vaincre
-  - attaque épée (clique gauche)
-
-
+  - trouver des TO DO...
+ 
 DONE:
   - 3rd Person view 
   - double jump
@@ -19,3 +16,8 @@ DONE:
   - batiment style + tank style
   - creation aleatoire de la map
   - laser grappin qui s'efface au contact du sol
+  - attaque (clique gauche)
+  - ajout boite titan a vaincre
+  - ajout chrono score ( but)
+  - affihage chrono et score
+  - reglement écrit
