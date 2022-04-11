@@ -93,9 +93,9 @@ function createScene() {
 
 function createGround(scene) {
     
-    const groundOptions = { width: 1000, height: 1000, subdivisions: 10, minHeight: 0, maxHeight: 300, onReady: onGroundCreated };
+    const groundOptions = { width: 1000, height: 1000, subdivisions: 10, minHeight: 0, maxHeight: 200, onReady: onGroundCreated };
     //scene is optional and defaults to the current scene
-    const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap("gdhm", 'images/hmap1.png', groundOptions, scene);
+    const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap("gdhm", 'images/noir.jpg', groundOptions, scene);
 
     function onGroundCreated() {
         const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
